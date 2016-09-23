@@ -36,12 +36,12 @@ none
 Example Playbook
 ----------------
 
-Before run playbook, you need put the private key and certificate file under tsyki.enable_ssl/files.
+Before run playbook, you need put the private key and certificate file under tsyki.enable-https/files.
 
     - hosts: servers
       become: yes
       roles:
-         - { role: tsyki.enable_ssl }
+         - { role: tsyki.enable-https }
 
 License
 -------
