@@ -1,0 +1,19 @@
+- name: install mod_ssl
+  yum: name=mod_ssl
+- name: create dest dir
+  file: path={{item}} state=directory
+  with_items:
+   - "{{ dest_certificate_dir }}"
+   - "{{ dest_private_key_dir}}"
+- name: copy certificate
+  copy: src={{ certificate_file_name }} dest={{ dest_certificate_path }}
+- name: copy private key
+  copy: src={{ private_key_file_name }} dest={{ dest_private_key_path }} mode=400
+- name: modify ssl.conf certificate path
+  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateFile' line='SSLCertificateFile {{ dest_certificate_path }}' backrefs=yes backup=yes
+- name: modify ssl.conf private key path
+  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateKeyFile' line='SSLCertificateKeyFile {{ dest_private_key_path }}' backrefs=yes backup=yes
+- name: open port 443 
+  firewalld: service=https permanent=true immediate=yes state=enabled
+- name: reload httpd
+  service: name=httpd state=reloaded
