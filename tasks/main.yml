@@ -1,18 +1,24 @@
 - name: install mod_ssl
   yum: name=mod_ssl
-- name: create dest dir
-  file: path={{item}} state=directory
-  with_items:
-   - "{{ dest_certificate_dir }}"
-   - "{{ dest_private_key_dir}}"
-- name: copy certificate
-  copy: src={{ certificate_file_name }} dest={{ dest_certificate_path }}
-- name: copy private key
-  copy: src={{ private_key_file_name }} dest={{ dest_private_key_path }} mode=400
+# for install certbot
+- name: install epel
+  yum: name=epel-release
+- name: install certbot
+  yum: name=certbot enablerepo=epel
+- name: check certificate file created
+  stat: path={{ certificate_file_dir }}/cert.pem
+  register: certificate_file
+- name: create certificate file
+  command: certbot certonly --webroot -w {{ webroot_dir}} -d {{ host_name}} -m {{ mail_address }} --agree-tos 
+  when: not certificate_file.stat.exists
 - name: modify ssl.conf certificate path
-  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateFile' line='SSLCertificateFile {{ dest_certificate_path }}' backrefs=yes backup=yes
+  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateFile' line='SSLCertificateFile {{ certificate_file_dir}}/cert.pem' backrefs=yes backup=yes
 - name: modify ssl.conf private key path
-  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateKeyFile' line='SSLCertificateKeyFile {{ dest_private_key_path }}' backrefs=yes backup=yes
+  lineinfile: dest={{ ssl_conf_path }} regexp='^SSLCertificateKeyFile' line='SSLCertificateKeyFile {{ certificate_file_dir }}/privkey.pem' backrefs=yes backup=yes
+- name: modify ssl.conf chain file path
+  lineinfile: dest={{ ssl_conf_path }} line='SSLCertificateChainFile {{ certificate_file_dir }}/chain.pem' backup=yes
+- name: enable ceritificate update cron
+  cron: name='update certificate' minute=5 hour=1 job='certbot renew --no-self-upgrade --post-hook "systemctl reload httpd" >{{cron_log_path}} 2>&1'
 - name: open port 443 
   firewalld: service=https permanent=true immediate=yes state=enabled
 - name: reload httpd

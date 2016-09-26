@@ -1,6 +1,6 @@
 galaxy_info:
   author: Toshiyuki Imaizumi
-  description: enable https
+  description: enable https using certbot
   #company: your company (optional)
   license: BSD
 
